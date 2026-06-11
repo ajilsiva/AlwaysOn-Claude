@@ -6,17 +6,38 @@ model, rate-limit utilization with reset countdowns, context-window %, active
 project and time spent on it — plus a Wake toggle (`caffeinate` wrapper) to
 keep the Mac awake during long sessions.
 
-## Build & install
+## Quick start (any Mac)
 
-Requires only Xcode Command Line Tools (no Xcode):
+Prerequisites:
+
+- macOS 14 or newer (Apple Silicon or Intel — it builds for your machine).
+- [Claude Code](https://claude.com/claude-code) installed and signed in — the
+  tracker reads its local transcripts and credentials; without it there is
+  nothing to track.
+- Xcode **Command Line Tools** only (`xcode-select --install`). Full Xcode is
+  not needed.
 
 ```bash
-bash scripts/install.sh    # build, install to /Applications, launch
-bash scripts/run.sh        # dev loop: build + launch from dist/ instead
+git clone https://github.com/ajilsiva/AlwaysOn-Claude.git
+cd AlwaysOn-Claude
+bash scripts/install.sh    # build from source, install to /Applications, launch
 ```
 
-To survive restarts: run `install.sh` once, then enable **Launch at Login**
-in the dropdown menu (manageable later in System Settings › Login Items).
+First launch: macOS shows one Keychain prompt for `/usr/bin/security`
+(reading your Claude Code OAuth token) — click **Always Allow**; it never
+asks again. Then enable **Launch at Login** from the dropdown menu to survive
+restarts (manageable later in System Settings › Login Items), or run:
+
+```bash
+"/Applications/Claude Tracker.app/Contents/MacOS/ClaudeTracker" --register-login
+```
+
+The Touch Bar widget appears only on Touch Bar MacBooks (2016–2023 13″ Pro);
+everywhere else the app runs menu-bar-only automatically. Because you build
+from source on your own machine, no Gatekeeper override is needed.
+
+For development iteration use `bash scripts/run.sh` (builds and launches from
+`dist/` without touching /Applications).
 
 The menu bar shows `✳︎ [bar] 5h% · wk%` — a drawn 5-hour progress bar colored
 like Claude Code's /usage card (green, orange ≥ 50%, red ≥ 85%), with ☕
