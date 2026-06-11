@@ -39,6 +39,7 @@ struct SessionSnapshot {
     var lastActivity: Date?
     var projectActiveSeconds: TimeInterval?
     var effortLevel: String?
+    var claudeCodeVersion: String?
 
     var contextPercent: Double? {
         guard let tokens = contextTokens, contextLimit > 0 else { return nil }

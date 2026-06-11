@@ -15,7 +15,30 @@ if CommandLine.arguments.contains("--dump") {
     print("activity: \(snapshot.activity)")
     print("projectActiveSeconds: \(snapshot.projectActiveSeconds.map { String(Int($0)) } ?? "-")")
     print("projectTimeDisplay: \(Format.duration(snapshot.displayActiveSeconds))")
-    print("claudeCodeVersion: \(pipeline.claudeCodeVersion() ?? "-")")
+    print("claudeCodeVersion: \(snapshot.claudeCodeVersion ?? "-")")
+
+    // `--dump --usage` also exercises the network path (prints percentages
+    // and reset times only — never token material).
+    if CommandLine.arguments.contains("--usage") {
+        let semaphore = DispatchSemaphore(value: 0)
+        Task {
+            defer { semaphore.signal() }
+            guard case .success(let credentials) = CredentialsProvider.load() else {
+                print("usage: no credentials")
+                return
+            }
+            do {
+                let response = try await UsageAPIClient().fetch(
+                    token: credentials.accessToken,
+                    claudeVersion: snapshot.claudeCodeVersion)
+                print("fiveHour: \(Format.percent(response.fiveHour?.utilization)) resets \(Format.reset(response.fiveHour?.resetsAtDate))")
+                print("sevenDay: \(Format.percent(response.sevenDay?.utilization)) resets \(Format.reset(response.sevenDay?.resetsAtDate))")
+            } catch {
+                print("usage error: \(error)")
+            }
+        }
+        semaphore.wait()
+    }
     exit(0)
 }
 

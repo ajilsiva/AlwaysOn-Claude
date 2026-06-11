@@ -23,6 +23,7 @@ final class LocalDataPipeline {
         snapshot.modelId = usage?.model
         snapshot.contextTokens = usage?.contextTokens
         snapshot.projectPath = meta.cwd
+        snapshot.claudeCodeVersion = meta.version
 
         let configuredModel = SettingsReader.configuredModel(projectCwd: meta.cwd)
         snapshot.contextLimit = TranscriptParser.contextLimit(
@@ -31,10 +32,5 @@ final class LocalDataPipeline {
         snapshot.projectActiveSeconds = aggregator.activeSeconds(forProjectDir: active.projectDir)
 
         return snapshot
-    }
-
-    func claudeCodeVersion() -> String? {
-        guard let active = indexer.findActiveSession() else { return nil }
-        return TranscriptParser.sessionMeta(in: active.url).version
     }
 }
