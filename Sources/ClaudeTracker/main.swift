@@ -1,4 +1,22 @@
 import AppKit
+import ServiceManagement
+
+// Shell-scriptable launch-at-login control (same SMAppService the menu
+// toggle uses): --register-login / --unregister-login / --login-status
+if CommandLine.arguments.contains(where: {
+    ["--register-login", "--unregister-login", "--login-status"].contains($0)
+}) {
+    let service = SMAppService.mainApp
+    do {
+        if CommandLine.arguments.contains("--register-login") { try service.register() }
+        if CommandLine.arguments.contains("--unregister-login") { try service.unregister() }
+    } catch {
+        print("login item error: \(error.localizedDescription)")
+        exit(1)
+    }
+    print("login item: \(service.status == .enabled ? "enabled" : "not enabled (status \(service.status.rawValue))")")
+    exit(0)
+}
 
 // `ClaudeTracker --dump` prints the local-data snapshot and exits — the same
 // pipeline the GUI uses, made shell-verifiable. Never prints secrets.

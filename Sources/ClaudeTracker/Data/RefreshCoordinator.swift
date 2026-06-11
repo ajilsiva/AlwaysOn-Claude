@@ -103,6 +103,7 @@ final class RefreshCoordinator {
                 usage.sevenDayPercent = response.sevenDay?.utilization
                 usage.sevenDayResetsAt = response.sevenDay?.resetsAtDate
                 usage.fetchedAt = Date()
+                usage.subscriptionType = credentials.subscriptionType
                 usage.status = .ok
                 self.state.apply(usage: usage)
             }

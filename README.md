@@ -5,18 +5,29 @@ model, rate-limit utilization with reset countdowns, context-window %, active
 project and time spent on it — plus a Wake toggle (`caffeinate` wrapper) to
 keep the Mac awake during long sessions.
 
-## Build & run
+## Build & install
 
 Requires only Xcode Command Line Tools (no Xcode):
 
 ```bash
-bash scripts/run.sh        # build, assemble dist/Claude Tracker.app, sign, launch
+bash scripts/install.sh    # build, install to /Applications, launch
+bash scripts/run.sh        # dev loop: build + launch from dist/ instead
 ```
 
-The menu bar shows `◐ 5h% · ctx%` (orange ≥ 70%, red ≥ 90%; ☕ prefix while
-Wake is on). The dropdown has the full readout, Wake toggle, Refresh (⌘R),
-and Quit (⌘Q). On Touch Bar Macs a persistent Control Strip button shows the
-compact readout; tapping it opens the full strip with Wake/Refresh controls.
+To survive restarts: run `install.sh` once, then enable **Launch at Login**
+in the dropdown menu (manageable later in System Settings › Login Items).
+
+The menu bar shows `✳︎ [bar] 5h% · wk%` — a drawn 5-hour progress bar colored
+like Claude Code's /usage card (green, orange ≥ 50%, red ≥ 85%), with ☕
+replacing ✳︎ while Wake is on. The dropdown opens with a /usage-style card
+(plan badge, 5-hour and Weekly bars, reset countdowns, status dot), then
+model/context/project rows, Wake toggle, Launch at Login, Refresh (⌘R), Quit
+(⌘Q). On Touch Bar Macs a persistent Control Strip widget shows both bars;
+tapping opens the full strip with Wake/Refresh controls.
+
+The tracker is global: it watches every Claude Code session in every
+terminal (all of `~/.claude/projects/`) and shows the most recently active
+one; utilization numbers are account-wide.
 
 ## Data sources
 

@@ -19,8 +19,8 @@ final class ControlStripController: NSObject, NSTouchBarDelegate {
     private var trayItem: NSCustomTouchBarItem?
     private var stripButton: NSButton?
     private var modalBar: NSTouchBar?
-    private var fiveHourLabel: NSTextField?
-    private var weekLabel: NSTextField?
+    private var fiveHourView: NSImageView?
+    private var weekView: NSImageView?
     private var contextLabel: NSTextField?
     private var wakeButton: NSButton?
     private var reassertTimer: Timer?
@@ -45,8 +45,9 @@ final class ControlStripController: NSObject, NSTouchBarDelegate {
         }
 
         DFR.showsCloseBoxWhenFrontMost(true)
-        let button = NSButton(title: "◐ –·–", target: self, action: #selector(stripTapped))
-        button.font = .monospacedDigitSystemFont(ofSize: 13, weight: .regular)
+        let button = NSButton(title: "", target: self, action: #selector(stripTapped))
+        button.image = BarRenderer.touchBarStripImage(fiveHour: nil, weekly: nil)
+        button.imagePosition = .imageOnly
         let item = NSCustomTouchBarItem(identifier: Self.stripIdentifier)
         item.view = button
         trayItem = item
@@ -77,17 +78,23 @@ final class ControlStripController: NSObject, NSTouchBarDelegate {
 
     func render() {
         guard isInstalled else { return }
-        let utilization = state.usage.fiveHourPercent.map { String(Int($0.rounded())) } ?? "–"
+        stripButton?.image = BarRenderer.touchBarStripImage(
+            fiveHour: state.usage.fiveHourPercent,
+            weekly: state.usage.sevenDayPercent)
+
+        let resetSuffix = state.usage.fiveHourResetsAt.map {
+            "→ \(Format.duration(max(0, $0.timeIntervalSinceNow)))"
+        }
+        fiveHourView?.image = BarRenderer.touchBarRowImage(
+            label: "5h", percent: state.usage.fiveHourPercent, suffix: resetSuffix)
+        weekView?.image = BarRenderer.touchBarRowImage(
+            label: "wk", percent: state.usage.sevenDayPercent)
+
         var context = "–"
         if case .active = state.session.activity, let percent = state.session.contextPercent {
-            context = String(Int(percent.rounded()))
+            context = "\(Int(percent.rounded()))%"
         }
-        stripButton?.title = "\(state.wakeEnabled ? "☕" : "◐") \(utilization)·\(context)"
-
-        fiveHourLabel?.stringValue =
-            "5h \(Format.percent(state.usage.fiveHourPercent)) → \(Format.reset(state.usage.fiveHourResetsAt))"
-        weekLabel?.stringValue = "wk \(Format.percent(state.usage.sevenDayPercent))"
-        contextLabel?.stringValue = "ctx \(context == "–" ? "–" : context + "%")"
+        contextLabel?.stringValue = "ctx \(context)"
         wakeButton?.title = state.wakeEnabled ? "☕ Wake On" : "☕ Wake Off"
         wakeButton?.bezelColor = state.wakeEnabled ? .controlAccentColor : nil
     }
@@ -129,15 +136,15 @@ final class ControlStripController: NSObject, NSTouchBarDelegate {
         let labelFont = NSFont.monospacedDigitSystemFont(ofSize: 15, weight: .regular)
         switch identifier {
         case Self.fiveHourID:
-            let label = NSTextField(labelWithString: "")
-            label.font = labelFont
-            fiveHourLabel = label
-            item.view = label
+            let imageView = NSImageView()
+            imageView.imageScaling = .scaleNone
+            fiveHourView = imageView
+            item.view = imageView
         case Self.weekID:
-            let label = NSTextField(labelWithString: "")
-            label.font = labelFont
-            weekLabel = label
-            item.view = label
+            let imageView = NSImageView()
+            imageView.imageScaling = .scaleNone
+            weekView = imageView
+            item.view = imageView
         case Self.contextID:
             let label = NSTextField(labelWithString: "")
             label.font = labelFont

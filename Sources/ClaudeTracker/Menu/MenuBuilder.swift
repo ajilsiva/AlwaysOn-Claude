@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 
 /// Owns the dropdown NSMenu. Data rows are disabled items whose titles are
 /// re-rendered from AppState; a 1 s timer keeps countdowns ticking while the
@@ -10,14 +11,15 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
     var onToggleWake: (() -> Void)?
     var onRefresh: (() -> Void)?
 
+    private let usageCard = UsageCardView()
+    private let usageCardItem = NSMenuItem()
     private let modelItem = NSMenuItem()
-    private let sessionItem = NSMenuItem()
-    private let weekItem = NSMenuItem()
     private let contextItem = NSMenuItem()
     private let effortItem = NSMenuItem()
     private let projectItem = NSMenuItem()
     private let timeItem = NSMenuItem()
     private let wakeItem = NSMenuItem()
+    private let loginItem = NSMenuItem()
     private let refreshItem = NSMenuItem()
     private var tickTimer: Timer?
 
@@ -27,13 +29,21 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
         menu.autoenablesItems = false
         menu.delegate = self
 
-        for item in [modelItem, sessionItem, weekItem, contextItem, effortItem, projectItem, timeItem] {
+        for item in [modelItem, contextItem, effortItem, projectItem, timeItem] {
             item.isEnabled = false
         }
+
+        usageCardItem.view = usageCard
 
         wakeItem.title = "Keep Mac Awake"
         wakeItem.target = self
         wakeItem.action = #selector(toggleWake)
+
+        loginItem.title = "Launch at Login"
+        loginItem.target = self
+        loginItem.action = #selector(toggleLoginItem)
+        // SMAppService needs a real bundle; hidden under bare `swift run`.
+        loginItem.isHidden = Bundle.main.bundleIdentifier == nil
 
         refreshItem.title = "Refresh Now"
         refreshItem.target = self
@@ -45,9 +55,9 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
                                   keyEquivalent: "q")
         quitItem.target = NSApp
 
+        menu.addItem(usageCardItem)
+        menu.addItem(.separator())
         menu.addItem(modelItem)
-        menu.addItem(sessionItem)
-        menu.addItem(weekItem)
         menu.addItem(contextItem)
         menu.addItem(effortItem)
         menu.addItem(.separator())
@@ -55,6 +65,7 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
         menu.addItem(timeItem)
         menu.addItem(.separator())
         menu.addItem(wakeItem)
+        menu.addItem(loginItem)
         menu.addItem(refreshItem)
         menu.addItem(.separator())
         menu.addItem(quitItem)
@@ -64,15 +75,14 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
 
     func update() {
         let session = state.session
-        let usage = state.usage
+
+        usageCard.update(usage: state.usage)
 
         if let model = session.modelId {
             modelItem.title = Format.modelDisplayName(model)
         } else {
             modelItem.title = "Claude Tracker"
         }
-
-        renderUsageRows(usage)
 
         switch session.activity {
         case .none:
@@ -103,6 +113,9 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
         }
 
         wakeItem.state = state.wakeEnabled ? .on : .off
+        if !loginItem.isHidden {
+            loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        }
     }
 
     private func contextLine(_ session: SessionSnapshot) -> String {
@@ -111,40 +124,22 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
         return "Context\t\(Format.percent(session.contextPercent)) of \(limit) (\(Format.tokens(session.contextTokens)))"
     }
 
-    private func renderUsageRows(_ usage: UsageSnapshot) {
-        let hasValues = usage.fiveHourPercent != nil || usage.sevenDayPercent != nil
-
-        if hasValues {
-            var sessionLine = "Session\t\(Format.percent(usage.fiveHourPercent)) · resets \(Format.reset(usage.fiveHourResetsAt))"
-            let weekLine = "Week\t\(Format.percent(usage.sevenDayPercent)) · resets \(Format.reset(usage.sevenDayResetsAt))"
-            if let stale = usage.staleSeconds {
-                sessionLine += "  (stale \(Format.duration(stale)))"
-            }
-            sessionItem.title = sessionLine
-            weekItem.title = weekLine
-            weekItem.isHidden = false
-            return
-        }
-
-        weekItem.isHidden = true
-        switch usage.status {
-        case .never:
-            sessionItem.title = "Usage\tloading…"
-        case .ok:
-            sessionItem.title = "Usage\t–"
-        case .noCredentials:
-            sessionItem.title = "Usage\tsign in via Claude Code"
-        case .unauthorized:
-            sessionItem.title = "Usage\tre-auth needed (claude login)"
-        case .rateLimited(let until):
-            sessionItem.title = "Usage\trate-limited" + (until.map { " until \(Format.reset($0))" } ?? "")
-        case .error(let message):
-            sessionItem.title = "Usage\tunavailable (\(message))"
-        }
-    }
-
     @objc private func toggleWake() {
         onToggleWake?()
+    }
+
+    @objc private func toggleLoginItem() {
+        let service = SMAppService.mainApp
+        do {
+            if service.status == .enabled {
+                try service.unregister()
+            } else {
+                try service.register()
+            }
+        } catch {
+            NSLog("LoginItem: \(error.localizedDescription)")
+        }
+        update()
     }
 
     @objc private func refresh() {

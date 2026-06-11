@@ -15,26 +15,30 @@ final class StatusItemController {
         render()
     }
 
+    /// "✳︎ [▰▰▰▱▱] 31% · 62%" — glyph (☕︎ while Wake is on), drawn 5-hour bar,
+    /// then 5h and weekly percentages.
     func render() {
         let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
         let title = NSMutableAttributedString()
 
-        let utilization = state.usage.fiveHourPercent
-        var utilizationColor = NSColor.labelColor
-        if let u = utilization {
-            if u >= 90 { utilizationColor = .systemRed }
-            else if u >= 70 { utilizationColor = .systemOrange }
-        }
-        let wakeMark = state.wakeEnabled ? "☕ " : ""
+        let glyph = state.wakeEnabled ? "☕\u{FE0E} " : "✳\u{FE0E} "
         title.append(NSAttributedString(
-            string: "\(wakeMark)◐ \(Format.percent(utilization))",
-            attributes: [.font: font, .foregroundColor: utilizationColor]))
+            string: glyph,
+            attributes: [.font: font, .foregroundColor: NSColor.labelColor]))
 
-        if state.session.contextTokens != nil, case .active = state.session.activity {
-            title.append(NSAttributedString(
-                string: " · \(Format.percent(state.session.contextPercent))",
-                attributes: [.font: font, .foregroundColor: NSColor.labelColor]))
-        }
+        let barSize = NSSize(width: 36, height: 7)
+        let attachment = NSTextAttachment()
+        attachment.image = BarRenderer.statusBarImage(percent: state.usage.fiveHourPercent,
+                                                      size: barSize)
+        attachment.bounds = NSRect(x: 0, y: 1, width: barSize.width, height: barSize.height)
+        title.append(NSAttributedString(attachment: attachment))
+
+        title.append(NSAttributedString(
+            string: " \(Format.percent(state.usage.fiveHourPercent))",
+            attributes: [.font: font, .foregroundColor: NSColor.labelColor]))
+        title.append(NSAttributedString(
+            string: " · \(Format.percent(state.usage.sevenDayPercent))",
+            attributes: [.font: font, .foregroundColor: NSColor.secondaryLabelColor]))
 
         item.button?.attributedTitle = title
         item.button?.toolTip = tooltip()

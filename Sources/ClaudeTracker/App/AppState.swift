@@ -15,6 +15,7 @@ struct UsageSnapshot {
     var sevenDayPercent: Double?
     var sevenDayResetsAt: Date?
     var fetchedAt: Date?
+    var subscriptionType: String?
     var status: UsageStatus = .never
 
     var staleSeconds: TimeInterval? {
@@ -146,6 +147,34 @@ enum Format {
         let clock = f.string(from: date)
         if remaining <= 0 { return "\(clock) (now)" }
         return "\(clock) (in \(duration(remaining)))"
+    }
+
+    /// "5h resets in 2h 52m" / "Week resets in 8h 11m · 7:30 PM" / "5h resets now"
+    static func resetCaption(prefix: String, date: Date?) -> String {
+        guard let date else { return "" }
+        let remaining = date.timeIntervalSinceNow
+        if remaining <= 60 { return "\(prefix) resets now" }
+        return "\(prefix) resets in \(duration(remaining)) · \(clock(date))"
+    }
+
+    /// Locale-aware short clock: "7:30 PM" (today) or "Mon 7:30 PM".
+    static func clock(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        let time = formatter.string(from: date)
+        if Calendar.current.isDateInToday(date) { return time }
+        let day = DateFormatter()
+        day.dateFormat = "EEE"
+        return "\(day.string(from: date)) \(time)"
+    }
+
+    /// "just now" / "5m ago" / "2h 4m ago"
+    static func ago(_ date: Date?) -> String {
+        guard let date else { return "–" }
+        let age = Date().timeIntervalSince(date)
+        if age < 90 { return "just now" }
+        return "\(duration(age)) ago"
     }
 
     /// 177_556 -> "177.6k"
