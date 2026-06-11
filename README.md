@@ -1,6 +1,7 @@
-# Claude Tracker
+# AlwaysOn Claude
 
-macOS menu bar + Touch Bar utility that tracks your live Claude Code usage:
+macOS menu bar + Touch Bar utility (app name: Claude Tracker) that tracks
+your live Claude Code usage:
 model, rate-limit utilization with reset countdowns, context-window %, active
 project and time spent on it — plus a Wake toggle (`caffeinate` wrapper) to
 keep the Mac awake during long sessions.
