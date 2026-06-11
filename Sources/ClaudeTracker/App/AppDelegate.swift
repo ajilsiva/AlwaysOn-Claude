@@ -4,6 +4,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let state = AppState()
     private let caffeinate = CaffeinateController()
     private var statusController: StatusItemController?
+    private var refreshCoordinator: RefreshCoordinator?
     private var sigusr1Source: DispatchSourceSignal?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -16,14 +17,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.state.setWake(on)
         }
 
+        let coordinator = RefreshCoordinator(state: state)
+        refreshCoordinator = coordinator
+
         let controller = StatusItemController(state: state)
         controller.menuBuilder.onToggleWake = { [weak self] in
             self?.caffeinate.toggle()
         }
-        controller.menuBuilder.onRefresh = {
-            // Wired to RefreshCoordinator in M3/M5.
+        controller.menuBuilder.onRefresh = { [weak coordinator] in
+            coordinator?.manualRefresh()
         }
         statusController = controller
+        coordinator.start()
 
         state.subscribe { [weak controller] in
             controller?.render()
@@ -41,6 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         caffeinate.stop()
+        refreshCoordinator?.stop()
     }
 
     private func isAnotherInstanceRunning() -> Bool {
