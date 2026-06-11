@@ -1,5 +1,33 @@
 import Foundation
 
+/// Which surfaces the app shows. Persisted in UserDefaults; "Touch Bar Only"
+/// is honored only while a Touch Bar is actually available — the app never
+/// runs with zero UI surfaces.
+enum DisplayMode: String, CaseIterable {
+    case both = "both"
+    case menuBarOnly = "menubar"
+    case touchBarOnly = "touchbar"
+
+    static let defaultsKey = "displayMode"
+
+    static func load() -> DisplayMode {
+        UserDefaults.standard.string(forKey: defaultsKey)
+            .flatMap(DisplayMode.init(rawValue:)) ?? .both
+    }
+
+    func save() {
+        UserDefaults.standard.set(rawValue, forKey: Self.defaultsKey)
+    }
+
+    var title: String {
+        switch self {
+        case .both: return "Menu Bar + Touch Bar"
+        case .menuBarOnly: return "Menu Bar Only"
+        case .touchBarOnly: return "Touch Bar Only"
+        }
+    }
+}
+
 enum UsageStatus: Equatable {
     case never
     case ok
@@ -68,6 +96,7 @@ final class AppState {
     private(set) var usage = UsageSnapshot()
     private(set) var session = SessionSnapshot()
     private(set) var wakeEnabled = false
+    private(set) var displayMode = DisplayMode.load()
     private var observers: [() -> Void] = []
 
     func subscribe(_ observer: @escaping () -> Void) {
@@ -87,6 +116,13 @@ final class AppState {
     func setWake(_ on: Bool) {
         guard wakeEnabled != on else { return }
         wakeEnabled = on
+        notify()
+    }
+
+    func setDisplayMode(_ mode: DisplayMode) {
+        guard displayMode != mode else { return }
+        displayMode = mode
+        mode.save()
         notify()
     }
 

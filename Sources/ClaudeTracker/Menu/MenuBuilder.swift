@@ -10,6 +10,7 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
 
     var onToggleWake: (() -> Void)?
     var onRefresh: (() -> Void)?
+    var onSelectDisplayMode: ((DisplayMode) -> Void)?
 
     private let usageCard = UsageCardView()
     private let usageCardItem = NSMenuItem()
@@ -20,6 +21,8 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
     private let timeItem = NSMenuItem()
     private let wakeItem = NSMenuItem()
     private let loginItem = NSMenuItem()
+    private let displayItem = NSMenuItem()
+    private var displayModeItems: [DisplayMode: NSMenuItem] = [:]
     private let refreshItem = NSMenuItem()
     private var tickTimer: Timer?
 
@@ -45,6 +48,25 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
         // SMAppService needs a real bundle; hidden under bare `swift run`.
         loginItem.isHidden = Bundle.main.bundleIdentifier == nil
 
+        displayItem.title = "Display"
+        let displayMenu = NSMenu()
+        displayMenu.autoenablesItems = false
+        for mode in DisplayMode.allCases {
+            let item = NSMenuItem(title: mode.title,
+                                  action: #selector(selectDisplayMode(_:)),
+                                  keyEquivalent: "")
+            item.target = self
+            item.representedObject = mode.rawValue
+            // Touch Bar choices are pointless without the hardware.
+            if mode != .menuBarOnly, !ControlStripController.hardwarePresent {
+                item.isEnabled = false
+                item.title = mode.title + "  (no Touch Bar)"
+            }
+            displayMenu.addItem(item)
+            displayModeItems[mode] = item
+        }
+        displayItem.submenu = displayMenu
+
         refreshItem.title = "Refresh Now"
         refreshItem.target = self
         refreshItem.action = #selector(refresh)
@@ -66,6 +88,7 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
         menu.addItem(.separator())
         menu.addItem(wakeItem)
         menu.addItem(loginItem)
+        menu.addItem(displayItem)
         menu.addItem(refreshItem)
         menu.addItem(.separator())
         menu.addItem(quitItem)
@@ -116,6 +139,9 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
         if !loginItem.isHidden {
             loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         }
+        for (mode, item) in displayModeItems {
+            item.state = mode == state.displayMode ? .on : .off
+        }
     }
 
     private func contextLine(_ session: SessionSnapshot) -> String {
@@ -126,6 +152,12 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
 
     @objc private func toggleWake() {
         onToggleWake?()
+    }
+
+    @objc private func selectDisplayMode(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String,
+              let mode = DisplayMode(rawValue: raw) else { return }
+        onSelectDisplayMode?(mode)
     }
 
     @objc private func toggleLoginItem() {

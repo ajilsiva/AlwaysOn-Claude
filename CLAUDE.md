@@ -23,7 +23,13 @@ bash scripts/install.sh                       # build → install /Applications 
 There is no test suite. Verify changes with `--dump` (exercises the exact production
 pipeline), plus: `pmset -g assertions` for the Wake feature, `kill -USR1 <pid>` to
 toggle Wake from the shell, `--login-status` / `--register-login` for the login item,
-`CT_NO_TOUCHBAR=1` to force menu-bar-only mode.
+`--set-display both|menubar|touchbar` for the surface preference (persisted in
+UserDefaults `displayMode`), `CT_NO_TOUCHBAR=1` to simulate a Mac without a Touch Bar.
+
+**Display modes:** `DisplayMode` (AppState.swift) + `AppDelegate.applyDisplayMode()`
+enforce one invariant — the app always has ≥1 UI surface. Touch Bar hardware is
+detected via `ControlStripController.hardwarePresent` (pgrep TouchBarServer); without
+it, Touch Bar menu options are disabled and "Touch Bar Only" falls back to menu bar.
 
 **Build constraints:** only Xcode CLT is installed (no Xcode/xcodebuild — never add an
 .xcodeproj). The .app bundle is assembled by `scripts/make-app.sh` and ad-hoc signed

@@ -18,6 +18,32 @@ if CommandLine.arguments.contains(where: {
     exit(0)
 }
 
+// `--set-display both|menubar|touchbar` persists the surface preference and
+// bounces the running GUI instance so it takes effect immediately.
+if let index = CommandLine.arguments.firstIndex(of: "--set-display") {
+    guard CommandLine.arguments.count > index + 1,
+          let mode = DisplayMode(rawValue: CommandLine.arguments[index + 1]) else {
+        print("usage: --set-display \(DisplayMode.allCases.map(\.rawValue).joined(separator: "|"))")
+        exit(1)
+    }
+    mode.save()
+    print("display mode: \(mode.rawValue) (\(mode.title))")
+    if let bundleID = Bundle.main.bundleIdentifier {
+        let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+            .filter { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }
+        if !running.isEmpty {
+            running.forEach { $0.terminate() }
+            Thread.sleep(forTimeInterval: 1.0)
+            let reopen = Process()
+            reopen.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            reopen.arguments = [Bundle.main.bundlePath]
+            try? reopen.run()
+            print("relaunched running instance")
+        }
+    }
+    exit(0)
+}
+
 // `ClaudeTracker --dump` prints the local-data snapshot and exits — the same
 // pipeline the GUI uses, made shell-verifiable. Never prints secrets.
 if CommandLine.arguments.contains("--dump") {

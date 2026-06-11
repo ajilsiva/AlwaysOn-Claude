@@ -28,6 +28,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.menuBuilder.onRefresh = { [weak coordinator] in
             coordinator?.manualRefresh()
         }
+        controller.menuBuilder.onSelectDisplayMode = { [weak self] mode in
+            self?.state.setDisplayMode(mode)
+            self?.applyDisplayMode()
+        }
         statusController = controller
 
         let strip = ControlStripController(state: state)
@@ -38,7 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             coordinator?.manualRefresh()
         }
         controlStrip = strip
-        strip.install()
+        applyDisplayMode()
 
         coordinator.start()
 
@@ -61,6 +65,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         caffeinate.stop()
         refreshCoordinator?.stop()
         controlStrip?.uninstall()
+    }
+
+    /// Applies the user's DisplayMode with one safety rule: the app must
+    /// always have at least one UI surface. If "Touch Bar Only" is chosen but
+    /// the Touch Bar can't be installed (no hardware, private API gone), the
+    /// menu bar item stays visible.
+    private func applyDisplayMode() {
+        let mode = state.displayMode
+        var touchBarActive = false
+        if mode != .menuBarOnly {
+            touchBarActive = controlStrip?.install() ?? false
+        } else {
+            controlStrip?.uninstall()
+        }
+        let showMenuBar = mode != .touchBarOnly || !touchBarActive
+        statusController?.setVisible(showMenuBar)
+        if mode == .touchBarOnly && !touchBarActive {
+            NSLog("Display: Touch Bar unavailable — keeping menu bar visible")
+        }
     }
 
     private func isAnotherInstanceRunning() -> Bool {

@@ -15,6 +15,10 @@ final class StatusItemController {
         render()
     }
 
+    func setVisible(_ visible: Bool) {
+        item.isVisible = visible
+    }
+
     /// "✳︎ [▰▰▰▱▱] 31% · 62%" — glyph (☕︎ while Wake is on), drawn 5-hour bar,
     /// then 5h and weekly percentages.
     func render() {

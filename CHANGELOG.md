@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.0 — 2026-06-11
+
+- Display preference: **Menu Bar + Touch Bar** (default), **Menu Bar Only**, or
+  **Touch Bar Only** — pick in the dropdown's Display submenu or via
+  `--set-display both|menubar|touchbar` (persists; relaunches a running instance).
+- Touch Bar hardware detection (TouchBarServer check): on Macs without a Touch
+  Bar the Touch Bar options are greyed out and the app runs menu-bar-only —
+  no errors, nothing to configure.
+- Safety rule: the app never runs with zero surfaces. "Touch Bar Only" falls
+  back to showing the menu bar whenever the Touch Bar is unavailable.
+
 ## 1.0.0 — 2026-06-11
 
 Initial release.

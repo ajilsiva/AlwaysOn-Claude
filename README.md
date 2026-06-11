@@ -33,8 +33,18 @@ restarts (manageable later in System Settings › Login Items), or run:
 ```
 
 The Touch Bar widget appears only on Touch Bar MacBooks (2016–2023 13″ Pro);
-everywhere else the app runs menu-bar-only automatically. Because you build
-from source on your own machine, no Gatekeeper override is needed.
+everywhere else the app runs menu-bar-only automatically — no errors, nothing
+to configure. On Touch Bar Macs you can choose the surface in the dropdown's
+**Display** submenu (Menu Bar + Touch Bar / Menu Bar Only / Touch Bar Only)
+or from the shell:
+
+```bash
+"/Applications/Claude Tracker.app/Contents/MacOS/ClaudeTracker" --set-display menubar   # or: touchbar, both
+```
+
+"Touch Bar Only" automatically falls back to the menu bar if the Touch Bar
+ever becomes unavailable, so the app can't end up uncontrollable. Because you
+build from source on your own machine, no Gatekeeper override is needed.
 
 For development iteration use `bash scripts/run.sh` (builds and launches from
 `dist/` without touching /Applications).

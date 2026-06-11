@@ -31,12 +31,32 @@ final class ControlStripController: NSObject, NSTouchBarDelegate {
         super.init()
     }
 
-    /// Returns false when the private API is unavailable (or disabled via
-    /// CT_NO_TOUCHBAR=1) — the app then runs menu-bar-only.
+    /// True only on Macs with a physical Touch Bar: the DFR symbols exist in
+    /// the shared cache on every Mac, but TouchBarServer runs only on Touch
+    /// Bar hardware. Evaluated once.
+    static let hardwarePresent: Bool = {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+        process.arguments = ["-x", "TouchBarServer"]
+        process.standardOutput = Pipe()
+        process.standardError = Pipe()
+        do { try process.run() } catch { return false }
+        process.waitUntilExit()
+        return process.terminationStatus == 0
+    }()
+
+    /// Returns false when no Touch Bar hardware exists, the private API is
+    /// unavailable, or CT_NO_TOUCHBAR=1 — the app then runs menu-bar-only.
+    /// Idempotent: returns true immediately if already installed.
     @discardableResult
     func install() -> Bool {
+        if isInstalled { return true }
         guard ProcessInfo.processInfo.environment["CT_NO_TOUCHBAR"] == nil else {
             NSLog("TouchBar: disabled via CT_NO_TOUCHBAR")
+            return false
+        }
+        guard Self.hardwarePresent else {
+            NSLog("TouchBar: no Touch Bar hardware — menu bar only")
             return false
         }
         guard DFR.isAvailable else {
