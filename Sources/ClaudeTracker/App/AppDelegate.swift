@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let caffeinate = CaffeinateController()
     private var statusController: StatusItemController?
     private var refreshCoordinator: RefreshCoordinator?
+    private var controlStrip: ControlStripController?
     private var sigusr1Source: DispatchSourceSignal?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -28,10 +29,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             coordinator?.manualRefresh()
         }
         statusController = controller
+
+        let strip = ControlStripController(state: state)
+        strip.onToggleWake = { [weak self] in
+            self?.caffeinate.toggle()
+        }
+        strip.onRefresh = { [weak coordinator] in
+            coordinator?.manualRefresh()
+        }
+        controlStrip = strip
+        strip.install()
+
         coordinator.start()
 
-        state.subscribe { [weak controller] in
+        state.subscribe { [weak controller, weak strip] in
             controller?.render()
+            strip?.render()
         }
 
         // `kill -USR1 <pid>` toggles Wake — scriptable (hotkeys) and testable.
@@ -47,6 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         caffeinate.stop()
         refreshCoordinator?.stop()
+        controlStrip?.uninstall()
     }
 
     private func isAnotherInstanceRunning() -> Bool {
