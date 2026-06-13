@@ -82,6 +82,19 @@ kill -USR1 $(pgrep -x ClaudeTracker)            # toggle Wake (hotkey-friendly)
 CT_NO_TOUCHBAR=1 open "dist/Claude Tracker.app" # menu-bar-only mode
 ```
 
+## Troubleshooting the build
+
+- **`swift: command not found`** or **`xcrun: error: invalid active developer
+  path`** — the Xcode Command Line Tools aren't installed (or point at a
+  missing path). Install them and re-run: `xcode-select --install`. The build
+  script preflights this and prints the same hint.
+- **`'SwiftSetting' has no member 'swiftLanguageMode'`** (or any
+  `Package.swift` manifest error) — you're on an older copy from before the
+  manifest was pinned to `swift-tools-version:5.9`. Update and rebuild:
+  `git pull && bash scripts/install.sh`.
+- Any macOS 14+ MacBook works (Intel or Apple Silicon); the minimum toolchain
+  on macOS 14 is Xcode 15 / Swift 5.9, which is exactly what the build targets.
+
 ## Caveats
 
 - The Touch Bar Control Strip item uses the private DFRFoundation API

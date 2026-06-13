@@ -33,8 +33,13 @@ it, Touch Bar menu options are disabled and "Touch Bar Only" falls back to menu 
 
 **Build constraints:** only Xcode CLT is installed (no Xcode/xcodebuild — never add an
 .xcodeproj). The .app bundle is assembled by `scripts/make-app.sh` and ad-hoc signed
-(mandatory on arm64). Paths contain spaces — always quote. Package compiles in Swift
-language mode v5 (`.swiftLanguageMode(.v5)`) to avoid strict-concurrency churn.
+(mandatory on arm64). Paths contain spaces — always quote. `Package.swift` is
+intentionally pinned to `swift-tools-version:5.9` — Swift 5 language mode is the
+default at that manifest version, so the package builds in v5 mode (avoiding
+strict-concurrency churn) on any toolchain from Xcode 15 up. Do NOT "upgrade" it to
+tools-version 6.0 + `swiftSettings: [.swiftLanguageMode(.v5)]`: that API only exists
+on newer Swift 6.x toolchains and breaks the manifest on earlier ones (clean-machine
+forks fail to compile before any source is touched).
 
 ## Architecture
 
